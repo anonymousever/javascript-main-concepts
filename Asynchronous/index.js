@@ -1,75 +1,154 @@
 // Asynchronous
-// 1. Definition
-// Asynchronous programming is a programming paradigm that uses a programming model
-// in which the program is divided into a sequence of steps that are executed one at a time, in some order,
-// and may be interleaved with other activities
+// 1. Callbacks
+const posts = [];
 
-// 2. Patterns to be used in asynchronous programming in JavaScript
-// Callback functions
-// Promises
-// Async/Await
-
-// 3. Callback functions
-function getUser(id, callback) {
+function getPosts() {
   setTimeout(() => {
-    console.log('Reading a user from a database...');
-    callback({ id: id, gitHubUsername: 'johndoe' });
+    posts.forEach(post => {
+      console.log(post);
+    });
   }, 1000);
 }
 
-getUser(1, user => {
-  console.log('User:', user);
+function addPost(post, callback) {
+  setTimeout(() => {
+    posts.push(post);
+    callback();
+  }, 2000);
+}
+
+addPost({}, getPosts);
+
+// 2. AJAX and XHR object
+const xhr = new XMLHttpRequest();
+xhr.open('GET', './posts.json');
+
+// readyState values
+// 0: Request not initialized
+// 1: Server connection established
+// 2: Request received
+// 3: Processing request
+// 4: Request finished and response is ready
+xhr.onreadystatechange = function () {
+  if (this.readyState === 4 && this.status === 200) {
+    console.log(JSON.parse(this.responseText));
+  }
+};
+
+xhr.send();
+
+// 3. Promises
+const getNewPosts = new Promise((resolve, reject) => {
+  setTimeout(() => {
+    const error = false;
+    if (!error) {
+      resolve({ title: '', body: '' });
+    } else {
+      reject('Something went wrong');
+    }
+  }, 1000);
 });
 
-// 4. Patterns to be used to prevent nested callbacks (callback hell)
-// Named functions (check the documentations for more details)
-// Promises
-
-// 5. Promises
-function getRepositories(username) {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      console.log('Calling GitHub API...');
-      resolve(['repo1', 'repo2', 'repo3']);
-    }, 2000);
-  });
-}
-
-getRepositories('johndoe')
-  .then(repos => {
-    console.log('Repos:', repos);
+getNewPosts
+  .then(post => {
+    console.log(post);
+    return post.title;
+  })
+  .then(title => {
+    console.log(title);
   })
   .catch(error => {
-    console.log('Error:', error);
+    console.log(error);
+  })
+  .finally(() => {
+    console.log('Promise resolved or rejected');
   });
 
-// 6. Promises in parallel mode
-function getCommits(repo) {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      console.log('Calling GitHub API...');
-      resolve(['commit1', 'commit2', 'commit3']);
-    }, 3000);
-  });
-}
-
-Promise.all([getRepositories('johndoe'), getCommits('repo1')])
-  .then(result => {
-    console.log('Result:', result);
+// 4. Fetch API
+// Structure
+fetch('./posts.json')
+  .then(response => {
+    return response.json();
+  })
+  .then(data => {
+    console.log(data);
   })
   .catch(error => {
-    console.log('Error:', error);
+    console.log(error);
   });
 
-// 7. Async/Await
-async function displayCommits() {
+// Options
+function addNewPost(post) {
+  fetch('https://jsonplaceholder.typicode.com/posts', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      title: post.title,
+      body: post.body,
+    }),
+  })
+    .then(response => {
+      return response.json();
+    })
+    .then(data => {
+      console.log(data);
+    });
+}
+
+addNewPost({});
+
+// 5. Errors handling
+// HTTP status codes
+// 100 range: Continue
+// 200 range: Success
+// 300 range: Redirects
+// 400 range: Client error
+// 500 range: Server error
+fetch('http://httpstat.us/400')
+  .then(response => {
+    if (response.status === 400) {
+      throw new Error('Client error');
+    }
+    if (response.status === 500) {
+      throw new Error('Server error');
+    }
+    if (response.status !== 200) {
+      throw new Error('Request failed');
+    }
+
+    return response;
+  })
+  .then(() => {
+    console.log('success');
+  })
+  .catch(error => {
+    console.log(error);
+  });
+
+// 6. Async & Await
+async function getUsers() {
+  const response = await fetch('https://jsonplaceholder.typicode.com/users');
+  const data = await response.json();
+  console.log(data);
+}
+
+getUsers();
+
+// 7. Async & Await errors handling
+async function getData() {
   try {
-    const repos = await getRepositories('johndoe');
-    const commits = await getCommits(repos[0]);
-    console.log('Commits:', commits);
+    const response = await fetch('http://httpstat.us/400');
+    if (!response.ok) {
+      throw new Error('Client error');
+    }
+
+    const data = await response.json();
+    console.log(data);
   } catch (error) {
-    console.log('Error:', error);
+    console.log(error);
   }
 }
 
-displayCommits();
+getData();
